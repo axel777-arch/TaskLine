@@ -92,6 +92,7 @@ export interface TasklineApi {
   updateSettings(settings: Partial<AppSettings>): Promise<AppSettings>;
   getStats(): Promise<TaskStats>;
   snoozeReminder(): Promise<void>;
+  resizeReminder(height: number): void;
   dismissWindow(): void;
   openMain(): void;
   onReminder(callback: (reminder: ReminderPayload) => void): () => void;

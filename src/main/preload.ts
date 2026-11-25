@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld("taskline", {
   updateSettings: (settings: Partial<AppSettings>) => ipcRenderer.invoke("settings:update", settings),
   getStats: () => ipcRenderer.invoke("stats:get"),
   snoozeReminder: () => ipcRenderer.invoke("reminder:snooze"),
+  resizeReminder: (height: number) => ipcRenderer.send("reminder:resize", height),
   dismissWindow: () => ipcRenderer.send("window:dismiss"),
   openMain: () => ipcRenderer.send("window:open-main"),
   onReminder: (callback: (reminder: ReminderPayload) => void) => {

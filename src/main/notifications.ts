@@ -210,10 +210,11 @@ export function stopNotificationService(): void {
   powerMonitor.removeListener("resume", evaluate);
 }
 
-export function popupBounds(scale = 1): Electron.Rectangle {
+export function popupBounds(scale = 1, contentHeight = Math.round(148 * scale)): Electron.Rectangle {
   const display = screen.getPrimaryDisplay();
-  const { x, y, height } = display.workArea;
-  const popupWidth = Math.round(360 * scale);
-  const popupHeight = Math.round(148 * scale);
+  const { x, y, width, height } = display.workArea;
+  const popupWidth = Math.min(Math.round(400 * scale), Math.max(1, width - 40));
+  const maxHeight = Math.max(1, height - 40);
+  const popupHeight = Math.min(Math.max(Math.round(contentHeight), Math.round(148 * scale)), maxHeight);
   return { x: x + 20, y: y + height - popupHeight - 20, width: popupWidth, height: popupHeight };
 }

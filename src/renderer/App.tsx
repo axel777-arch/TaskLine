@@ -45,7 +45,7 @@ function isOverdue(task: Task): boolean {
 
 export default function App() {
   const isPopup = new URLSearchParams(window.location.search).has("popup");
-  const [page, setPage] = useState<Page>("dashboard");
+  const [page, setPage] = useState<Page>("tasks");
   const [tasks, setTasks] = useState<Task[]>([]);
   const [stats, setStats] = useState<TaskStats>(emptyStats);
   const [settings, setSettings] = useState<AppSettings>(emptySettings);
@@ -598,7 +598,7 @@ function SettingsPage({ settings, onChange, onDataAction }: {
     <div className="page-heading"><div><div className="eyebrow">MAKE TASKLINE YOURS</div><h1>Settings</h1><p>Your preferences stay on this device.</p></div></div>
     <div className="settings-layout">
       <div className="settings-section"><div className="settings-section-title"><div className="settings-icon"><Settings2 size={17} /></div><div><h2>General</h2><p>How TASKLINE runs on your desktop.</p></div></div>
-        <SettingRow title="Launch when I sign in" description="Start TASKLINE in the background when Windows starts."><Toggle checked={settings.launchOnStartup} onChange={value => onChange({ launchOnStartup: value })} /></SettingRow>
+        <SettingRow title="Launch when I sign in" description="Open TASKLINE when Windows starts."><Toggle checked={settings.launchOnStartup} onChange={value => onChange({ launchOnStartup: value })} /></SettingRow>
         <SettingRow title="Start minimized" description="Keep the main window out of the way when launched."><Toggle checked={settings.startMinimized} onChange={value => onChange({ startMinimized: value })} /></SettingRow>
         <SettingRow title="Close to system tray" description="Closing the window keeps reminders running in the background."><Toggle checked={settings.minimizeToTray} onChange={value => onChange({ minimizeToTray: value })} /></SettingRow>
         <SettingRow title="Interface size" description="Adjust text and controls across TASKLINE."><div className="scale-control"><input type="range" min="0.9" max="1.3" step="0.05" value={settings.interfaceScale} aria-label="Interface size" onChange={event => onChange({ interfaceScale: Number(event.target.value) })} /><output>{Math.round(settings.interfaceScale * 100)}%</output></div></SettingRow>
@@ -678,6 +678,15 @@ function ReminderCard({ reminder, onDismiss, onOpen, onSnooze, interfaceScale }:
     setPayload(value);
     setSequence(current => current + 1);
   }), []);
+  useEffect(() => {
+    const element = document.querySelector<HTMLElement>(".popup-window");
+    if (!element) return;
+    const resize = () => window.taskline.resizeReminder(element.getBoundingClientRect().height);
+    const observer = new ResizeObserver(resize);
+    observer.observe(element);
+    resize();
+    return () => observer.disconnect();
+  }, [interfaceScale, payload]);
   return <div className="popup-window" style={{ zoom: interfaceScale }}>
     <div className="popup-head"><div className="popup-brand"><span className="popup-mark"><Target size={13} /></span><span>TASKLINE <i>·</i> A MOMENT TO RESET</span></div><button onClick={onDismiss} aria-label="Dismiss reminder"><X size={15} /></button></div>
     <div className="popup-content"><div className="popup-title">{payload?.title ?? "Take a breath. Find your next step."}</div><div className="popup-message">{payload?.message ?? "A little progress is still progress."}</div></div>

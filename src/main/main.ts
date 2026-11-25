@@ -29,8 +29,8 @@ let quitting = false;
 let pendingReminder: ReminderPayload | null = null;
 let reminderHideTimer: NodeJS.Timeout | undefined;
 
-function updateStartupSetting(enabled: boolean): void {
-  app.setLoginItemSettings({ openAtLogin: enabled, args: ["--hidden"] });
+function updateStartupSetting(enabled: boolean, startMinimized: boolean): void {
+  app.setLoginItemSettings({ openAtLogin: enabled, args: startMinimized ? ["--hidden"] : [] });
 }
 
 function createMainWindow(): BrowserWindow {
@@ -142,7 +142,7 @@ function registerIpc(): void {
   ipcMain.handle("settings:get", () => getSettings());
   ipcMain.handle("settings:update", (_event, settings: Partial<AppSettings>) => {
     const saved = updateSettings(settings);
-    updateStartupSetting(saved.launchOnStartup);
+    updateStartupSetting(saved.launchOnStartup, saved.startMinimized);
     return saved;
   });
   ipcMain.handle("stats:get", () => getStats());
@@ -194,6 +194,11 @@ function registerIpc(): void {
   ipcMain.handle("reminder:snooze", () => {
     if (pendingReminder) setTimeout(() => showReminder(pendingReminder!), 10 * 60_000);
   });
+  ipcMain.on("reminder:resize", (event, height: number) => {
+    if (!Number.isFinite(height) || height <= 0 ||
+      !reminderWindow || reminderWindow.isDestroyed() || event.sender !== reminderWindow.webContents) return;
+    reminderWindow.setBounds(popupBounds(getSettings().interfaceScale, height));
+  });
   ipcMain.on("window:dismiss", () => reminderWindow?.hide());
   ipcMain.on("window:open-main", () => {
     reminderWindow?.hide();
@@ -209,7 +214,8 @@ if (!gotLock) {
   app.whenReady().then(() => {
     app.setAppUserModelId("com.taskline.desktop");
     initializeDatabase();
-    updateStartupSetting(getSettings().launchOnStartup);
+    const settings = getSettings();
+    updateStartupSetting(settings.launchOnStartup, settings.startMinimized);
     registerIpc();
     createTray();
     mainWindow = createMainWindow();
