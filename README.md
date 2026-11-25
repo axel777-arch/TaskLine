@@ -1,6 +1,6 @@
 # TASKLINE
 
-TASKLINE is a local-first Windows desktop task manager built with Electron, React, TypeScript, and SQLite. Task data and notification history stay in the Windows app-data directory; the app does not use accounts, cloud services, or a network connection.
+TASKLINE is a local-first Windows desktop task manager built with Electron, React, TypeScript, and SQLite. Task data and notification history stay in the Windows app-data directory. The app does not use accounts or cloud sync; packaged installations connect to GitHub Releases only to check for app updates.
 
 ## Requirements
 
@@ -33,15 +33,19 @@ The installer is written to `release/`. It offers installation-directory selecti
 
 ## Windows startup and tray
 
-The **Launch when I sign in** preference is enabled by default. TASKLINE registers itself with Electron's Windows login-item integration and passes a hidden-start argument so Windows startup does not open the main workspace in front of you. Turn this preference off in **Settings → General** to remove the login item. The setting is applied immediately.
+The **Launch when I sign in** preference is enabled by default. TASKLINE opens directly to **All tasks** when Windows starts, unless **Start minimized** is enabled. Turn **Launch when I sign in** off in **Settings → General** to remove the login item. The setting is applied immediately.
 
-Closing the main window hides TASKLINE in the system tray by default. Use **Open TASKLINE** to show it again, or choose **Exit** from the tray menu to stop background reminders. **Start minimized** controls ordinary app launches.
+Closing the main window hides TASKLINE in the system tray by default. Use **Open TASKLINE** to show it again, or choose **Exit** from the tray menu to stop background reminders. **Start minimized** controls whether Windows sign-in and ordinary app launches show the main window.
 
 To verify startup behavior after installing:
 
 1. Open TASKLINE → **Settings → General** and confirm **Launch when I sign in** is on.
-2. Sign out of Windows and sign in again. TASKLINE should appear in the tray without opening the main window.
+2. Sign out of Windows and sign in again. TASKLINE should open to **All tasks**, or stay in the tray if **Start minimized** is on.
 3. Open the tray menu to restore the workspace. Turn off **Launch when I sign in** to disable future automatic launches.
+
+## Application updates
+
+Packaged builds check the configured GitHub Releases page when TASKLINE starts and automatically download available updates. A downloaded update is installed when the app exits. Publishing a release requires `GH_TOKEN` and an electron-builder publish run; the GitHub provider configuration is in `package.json`.
 
 ## Features
 

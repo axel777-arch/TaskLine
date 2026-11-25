@@ -1,4 +1,5 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, screen, Tray } from "electron";
+import { autoUpdater } from "electron-updater";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import {
@@ -28,6 +29,10 @@ let tray: Tray | null = null;
 let quitting = false;
 let pendingReminder: ReminderPayload | null = null;
 let reminderHideTimer: NodeJS.Timeout | undefined;
+let reminderExitTimer: NodeJS.Timeout | undefined;
+
+const reminderLifetimeMs = 30_000;
+const reminderExitAnimationMs = 250;
 
 function updateStartupSetting(enabled: boolean, startMinimized: boolean): void {
   app.setLoginItemSettings({ openAtLogin: enabled, args: startMinimized ? ["--hidden"] : [] });
@@ -70,6 +75,26 @@ function showMainWindow(): void {
   if (!mainWindow || mainWindow.isDestroyed()) mainWindow = createMainWindow();
   mainWindow.show();
   mainWindow.focus();
+}
+
+function dismissReminder(): void {
+  if (!reminderWindow || reminderWindow.isDestroyed()) return;
+  if (reminderHideTimer) clearTimeout(reminderHideTimer);
+  reminderHideTimer = undefined;
+  if (reminderExitTimer) clearTimeout(reminderExitTimer);
+  reminderWindow.webContents.send("reminder:hide");
+  reminderExitTimer = setTimeout(() => {
+    reminderExitTimer = undefined;
+    if (reminderWindow && !reminderWindow.isDestroyed()) reminderWindow.hide();
+  }, reminderExitAnimationMs);
+}
+
+function configureAutoUpdates(): void {
+  if (!app.isPackaged) return;
+  autoUpdater.on("error", error => console.error("TASKLINE auto-update error:", error));
+  void autoUpdater.checkForUpdatesAndNotify().catch(error => {
+    console.error("TASKLINE auto-update check failed:", error);
+  });
 }
 
 function createTray(): void {
@@ -116,6 +141,10 @@ function createReminderWindow(): BrowserWindow {
 function showReminder(reminder: ReminderPayload): void {
   pendingReminder = reminder;
   if (!reminderWindow || reminderWindow.isDestroyed()) reminderWindow = createReminderWindow();
+  if (reminderHideTimer) clearTimeout(reminderHideTimer);
+  reminderHideTimer = undefined;
+  if (reminderExitTimer) clearTimeout(reminderExitTimer);
+  reminderExitTimer = undefined;
   const bounds = popupBounds(getSettings().interfaceScale);
   reminderWindow.setBounds(bounds);
   if (reminderWindow.webContents.isLoading()) {
@@ -126,10 +155,7 @@ function showReminder(reminder: ReminderPayload): void {
     reminderWindow.webContents.send("reminder:show", reminder);
   }
   reminderWindow.showInactive();
-  if (reminderHideTimer) clearTimeout(reminderHideTimer);
-  reminderHideTimer = setTimeout(() => {
-    if (reminderWindow && !reminderWindow.isDestroyed()) reminderWindow.hide();
-  }, 13_000);
+  reminderHideTimer = setTimeout(dismissReminder, reminderLifetimeMs);
 }
 
 function registerIpc(): void {
@@ -199,9 +225,9 @@ function registerIpc(): void {
       !reminderWindow || reminderWindow.isDestroyed() || event.sender !== reminderWindow.webContents) return;
     reminderWindow.setBounds(popupBounds(getSettings().interfaceScale, height));
   });
-  ipcMain.on("window:dismiss", () => reminderWindow?.hide());
+  ipcMain.on("window:dismiss", dismissReminder);
   ipcMain.on("window:open-main", () => {
-    reminderWindow?.hide();
+    dismissReminder();
     showMainWindow();
   });
 }
@@ -217,6 +243,7 @@ if (!gotLock) {
     const settings = getSettings();
     updateStartupSetting(settings.launchOnStartup, settings.startMinimized);
     registerIpc();
+    configureAutoUpdates();
     createTray();
     mainWindow = createMainWindow();
     startNotificationService(showReminder, showMainWindow, () => Boolean(mainWindow?.isVisible()));
@@ -225,6 +252,8 @@ if (!gotLock) {
   app.on("before-quit", () => {
     quitting = true;
     stopNotificationService();
+    if (reminderHideTimer) clearTimeout(reminderHideTimer);
+    if (reminderExitTimer) clearTimeout(reminderExitTimer);
     closeDatabase();
     tray?.destroy();
   });

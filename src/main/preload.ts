@@ -25,4 +25,9 @@ contextBridge.exposeInMainWorld("taskline", {
     ipcRenderer.on("reminder:show", listener);
     return () => ipcRenderer.removeListener("reminder:show", listener);
   },
+  onReminderHide: (callback: () => void) => {
+    const listener = () => callback();
+    ipcRenderer.on("reminder:hide", listener);
+    return () => ipcRenderer.removeListener("reminder:hide", listener);
+  },
 });

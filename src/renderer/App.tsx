@@ -98,7 +98,12 @@ export default function App() {
   }, [notice]);
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
-      if (event.key === "Escape") { setModalTask(undefined); setDraftScheduledAt(null); setReminder(null); }
+      if (event.key === "Escape") {
+        setModalTask(undefined);
+        setDraftScheduledAt(null);
+        setReminder(null);
+        if (isPopup) window.taskline.dismissWindow();
+      }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "n") {
         event.preventDefault();
         setDraftScheduledAt(null);
@@ -673,11 +678,14 @@ function ReminderCard({ reminder, onDismiss, onOpen, onSnooze, interfaceScale }:
 }) {
   const [payload, setPayload] = useState(reminder);
   const [sequence, setSequence] = useState(0);
+  const [exiting, setExiting] = useState(false);
   useEffect(() => setPayload(reminder), [reminder]);
   useEffect(() => window.taskline.onReminder(value => {
     setPayload(value);
     setSequence(current => current + 1);
+    setExiting(false);
   }), []);
+  useEffect(() => window.taskline.onReminderHide(() => setExiting(true)), []);
   useEffect(() => {
     const element = document.querySelector<HTMLElement>(".popup-window");
     if (!element) return;
@@ -687,7 +695,8 @@ function ReminderCard({ reminder, onDismiss, onOpen, onSnooze, interfaceScale }:
     resize();
     return () => observer.disconnect();
   }, [interfaceScale, payload]);
-  return <div className="popup-window" style={{ zoom: interfaceScale }}>
+  return <div key={sequence} className={`popup-window${exiting ? " exiting" : ""}`}
+    style={{ width: `${100 / interfaceScale}vw`, zoom: interfaceScale }}>
     <div className="popup-head"><div className="popup-brand"><span className="popup-mark"><Target size={13} /></span><span>TASKLINE <i>·</i> A MOMENT TO RESET</span></div><button onClick={onDismiss} aria-label="Dismiss reminder"><X size={15} /></button></div>
     <div className="popup-content"><div className="popup-title">{payload?.title ?? "Take a breath. Find your next step."}</div><div className="popup-message">{payload?.message ?? "A little progress is still progress."}</div></div>
     <div className="popup-actions">{payload?.task && <button className="popup-task-action" onClick={() => { onOpen(); window.taskline.setTaskStatus(payload.task!.id, "in_progress"); }}>Start task <ArrowRight size={13} /></button>}

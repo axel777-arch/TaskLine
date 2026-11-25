@@ -96,6 +96,7 @@ export interface TasklineApi {
   dismissWindow(): void;
   openMain(): void;
   onReminder(callback: (reminder: ReminderPayload) => void): () => void;
+  onReminderHide(callback: () => void): () => void;
 }
 
 declare global {
