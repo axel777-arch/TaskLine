@@ -45,7 +45,7 @@ To verify startup behavior after installing:
 
 ## Application updates
 
-Packaged builds check the configured GitHub Releases page when TASKLINE starts and automatically download available updates. A downloaded update is installed when the app exits. Publishing a release requires `GH_TOKEN` and an electron-builder publish run; the GitHub provider configuration is in `package.json`.
+Packaged builds check the configured GitHub Releases page when TASKLINE starts and automatically download available updates. A downloaded update is installed when the app exits. To publish a Windows release, bump the version in `package.json` and push a matching `v<version>` tag. GitHub Actions builds and publishes the installer and update metadata. The first updater-enabled release must be installed manually; later releases can update automatically.
 
 ## Features
 

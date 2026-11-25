@@ -1,6 +1,6 @@
 {
   "name": "taskline",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "author": "TASKLINE",
   "description": "A local-first desktop productivity and accountability app.",
@@ -62,7 +62,8 @@
       {
         "provider": "github",
         "owner": "axel777-arch",
-        "repo": "TaskLine"
+        "repo": "TaskLine",
+        "releaseType": "release"
       }
     ]
   }
